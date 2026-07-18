@@ -3,6 +3,7 @@ package com.example.notepad.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val DB_NAME = "notepad_database"
     }
+    
+    // ViewModel для управления данными
+    private val viewModel: NoteViewModel by viewModels()
     
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
