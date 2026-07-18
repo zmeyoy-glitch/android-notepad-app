@@ -11,49 +11,41 @@ import androidx.compose.ui.unit.dp
 import com.example.notepad.data.NoteEntity
 
 /**
- * Экран просмотра и редактирования существующей заметки
+ * Экран просмотра заметки с отображением временного слота и статуса
  */
 @Composable
 fun NoteViewScreen(
-    note: NoteEntity?,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onBack: () -> Unit
+    note: NoteEntity, // Конкретная заметка для просмотра
+    onBackClick: () -> Unit,
+    onEditClick: (NoteEntity) -> Unit,
+    onDeleteClick: () -> Unit
 ) {
-    if (note == null) {
-        EmptyState()
-        return
-    }
-    
-    val timeSlotText = when (note.startTime) {
-        1L -> "17:00 - 17:15"
-        2L -> "17:15 - 17:30"
-        3L -> "17:30 - 17:45"
-        4L -> "17:45 - 18:00"
-        5L -> "18:00 - 18:15"
-        6L -> "18:15 - 18:30"
-        7L -> "18:30 - 18:45"
-        8L -> "18:45 - 19:00"
-        9L -> "19:00 - 19:15"
-        10L -> "19:15 - 19:30"
-        11L -> "19:30 - 19:45"
-        12L -> "19:45 - 20:00"
-        else -> "Не выбрано время"
-    }
-    
-    val statusText = when (note.status) {
-        0 -> "Черновик"
-        1 -> "Опубликовано"
-        else -> "Архив"
-    }
+    var isEditing by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(note.title ?: "Без названия") },
+                title = { Text(note.title ?: "Без названия", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    // Кнопка редактирования (если заметка не в режиме просмотра)
+                    if (!isEditing) {
+                        IconButton(onClick = { isEditing = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Редактировать")
+                        }
+                        
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
+                        }
+                    } else {
+                        // Кнопка сохранения при редактировании
+                        IconButton(onClick = { isEditing = false }) {
+                            Icon(Icons.Default.Check, contentDescription = "Сохранить")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -68,53 +60,96 @@ fun NoteViewScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Информация о временном слоте и статусе
+            // Поле контента заметки (только для чтения в режиме просмотра)
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Временной слот", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(timeSlotText, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = note.content ?: "Пусто",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            
+            // Временной слот (только для чтения)
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Временной слот", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    Text("Статус", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(statusText, style = MaterialTheme.typography.bodyLarge)
+                    // Отображение выбранного временного слота
+                    val timeSlotText = when (note.startTime) {
+                        1 -> "17:00 - 17:15"
+                        2 -> "17:15 - 17:30"
+                        3 -> "17:30 - 17:45"
+                        4 -> "17:45 - 18:00"
+                        5 -> "18:00 - 18:15"
+                        6 -> "18:15 - 18:30"
+                        7 -> "18:30 - 18:45"
+                        8 -> "18:45 - 19:00"
+                        9 -> "19:00 - 19:15"
+                        10 -> "19:15 - 19:30"
+                        11 -> "19:30 - 19:45"
+                        12 -> "19:45 - 20:00"
+                        else -> "Не выбрано время"
+                    }
+                    
+                    Text(
+                        text = timeSlotText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFF6200EE), // Акцентный цвет
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
             
-            // Контент заметки
+            // Статус заметки (только для чтения)
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Контент", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Статус", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     
-                    val contentText = note.content ?: "Пусто"
-                    Text(contentText, style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Отображение статуса заметки
+                    val statusText = when (note.status) {
+                        0 -> "Черновик"
+                        1 -> "Опубликовано"
+                        else -> "Архив"
+                    }
+                    
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = when (note.status) {
+                            0 -> Color.Gray // Черновик - серый
+                            1 -> Color.Green // Опубликовано - зеленый
+                            else -> Color.Orange // Архив - оранжевый
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
             
-            // Кнопки действий
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            // Кнопка редактирования (если заметка не в режиме просмотра)
+            if (!isEditing) {
                 Button(
-                    onClick = onEditClick,
-                    modifier = Modifier.weight(1f),
+                    onClick = { isEditing = true },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
                 ) {
                     Text("Редактировать")
                 }
-                
+            } else {
+                // Кнопка сохранения при редактировании
                 Button(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    onClick = { isEditing = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Green)
                 ) {
-                    Text("Удалить")
+                    Text("Сохранить изменения")
                 }
             }
         }
