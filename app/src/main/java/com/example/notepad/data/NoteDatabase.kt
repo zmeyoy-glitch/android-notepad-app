@@ -6,32 +6,28 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 /**
- * Room Database для хранения заметок
+ * Room Database для хранения заметок с временными слотами и статусами
  */
-@Database(
-    entities = [Note::class],
-    version = 1,
-    exportSchema = false
-)
-abstract class NoteDatabase : RoomDatabase() {
+@Database(entities = [NoteEntity::class], version = 2, exportSchema = false)
+abstract class AppDatabase : RoomDatabase() {
     
     abstract fun noteDao(): NoteDao
     
     companion object {
         @Volatile
-        private var INSTANCE: NoteDatabase? = null
+        private var INSTANCE: AppDatabase? = null
         
         /**
-         * Получение единственного экземпляра базы данных (Singleton pattern)
+         * Получение экземпляра базы данных (с временными слотами и статусами)
          */
-        fun getDatabase(context: Context): NoteDatabase {
+        fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    NoteDatabase::class.java,
+                    AppDatabase::class.java,
                     "notepad_database"
                 )
-                    .fallbackToDestructiveMigration() // Перезаписать данные при обновлении версии
+                    .addMigrations(MIGRATION_1_2) // Миграция с версии 1 на версию 2
                     .build()
                 
                 INSTANCE = instance
@@ -39,102 +35,34 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
     }
-}
-
-/**
- * DAO для работы с заметками
- */
-interface NoteDao {
     
     /**
-     * Вставка новой заметки
+     * Миграция базы данных с версии 1 на версию 2 (добавление полей startTime и status)
      */
-    suspend fun insertNote(note: Note): Long
-    
-    /**
-     * Обновление существующей заметки
-     */
-    suspend fun updateNote(note: Note)
-    
-    /**
-     * Получение всех заметок
-     */
-    suspend fun getAllNotes(): List<Note>
-    
-    /**
-     * Получение заметки по ID
-     */
-    suspend fun getNoteById(id: Long): Note?
-    
-    /**
-     * Удаление заметки
-     */
-    suspend fun deleteNote(id: Long)
-    
-    /**
-     * Поиск заметок по содержимому
-     */
-    suspend fun searchNotes(query: String): List<Note>
-}
-
-/**
- * Расширение для работы с DAO
- */
-fun NoteDatabase.noteDao(): NoteDao = object : NoteDao {
-    override suspend fun insertNote(note: Note): Long {
-        return noteDaoInternal().insert(note)
-    }
-    
-    override suspend fun updateNote(note: Note) {
-        noteDaoInternal().update(note)
-    }
-    
-    override suspend fun getAllNotes(): List<Note> {
-        return noteDaoInternal().getAll()
-    }
-    
-    override suspend fun getNoteById(id: Long): Note? {
-        return noteDaoInternal().getById(id)
-    }
-    
-    override suspend fun deleteNote(id: Long) {
-        noteDaoInternal().delete(id)
-    }
-    
-    override suspend fun searchNotes(query: String): List<Note> {
-        return noteDaoInternal().search(query)
-    }
-}
-
-/**
- * Внутренний DAO для Room
- */
-private class NoteDaoInternal(
-    private val db: NoteDatabase
-) : androidx.room.RoomDatabase.NoteDao() {
-    
-    override suspend fun insert(note: com.example.notepad.data.Note): Long = 
-        super.insert(note)
-    
-    override suspend fun update(note: com.example.notepad.data.Note) = 
-        super.update(note)
-    
-    override suspend fun getAll(): List<com.example.notepad.data.Note> = 
-        super.getAll()
-    
-    override suspend fun getById(id: Long): com.example.notepad.data.Note? = 
-        super.getById(id)
-    
-    override suspend fun delete(id: Long) = 
-        super.delete(id)
-    
-    override suspend fun search(query: String): List<com.example.notepad.data.Note> {
-        // Поиск по содержимому заметки
-        return db.noteDaoInternal().getAll()
-            .filter { note ->
-                note.content.contains(query, ignoreCase = true) ||
-                    note.startTime.contains(query, ignoreCase = true) ||
-                    note.endTime.contains(query, ignoreCase = true)
+    private val MIGRATION_1_2 by lazy {
+        object : Migrations(1, 2) {
+            override fun migrate(database: RoomDatabase, oldVersion: Int, newVersion: Int) {
+                // Миграция данных из старой таблицы в новую с новыми полями
+                val db = database as AppDatabase
+                val noteDao = db.noteDao()
+                
+                // Получение всех заметок из старой версии (без startTime и status)
+                val notes = noteDao.getAllNotes().value ?: return
+                
+                // Обновление существующих заметок с начальными значениями для новых полей
+                notes.forEach { note ->
+                    noteDao.update(note.copy(startTime = 1, status = 0))
+                }
             }
+        }
     }
+}
+
+/**
+ * Расширение для удобного получения экземпляра базы данных (с временными слотами и статусами)
+ */
+fun AppDatabase.getInstance(
+    context: Context
+): AppDatabase {
+    return this.getInstance(context)
 }
