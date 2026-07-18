@@ -2,136 +2,171 @@ package com.example.notepad.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.RoomDatabase
-import com.example.notepad.data.Note
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.example.notepad.data.NoteEntity
+import com.example.notepad.data.NoteRepository
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel для управления заметками с учетом временных слотов
+ * ViewModel для управления списком заметок с временными слотами и статусами
  */
-class NoteViewModel : ViewModel() {
+class NoteViewModel(
+    private val repository: NoteRepository = NoteRepository()
+) : ViewModel() {
     
-    // Состояние заметок (для реактивного обновления UI)
-    private val _notes = MutableStateFlow(emptyList<Note>())
-    val notes: StateFlow<List<Note>> = _notes
+    // Список всех заметок (с временными слотами и статусами)
+    val notesFlow: StateFlow<List<NoteEntity>> = repository.notesFlow
     
     /**
-     * Создать новую заметку с выбранным временным слотом
+     * Сохранение новой или существующей заметки с временным слотом и статусом
      */
-    fun createNote(
-        title: String?,
+    fun saveNote(
+        title: String,
         content: String,
-        startTime: Long, // 1-12 для выбора слота
-        status: Int = 0 // 0 - черновик, 1 - опубликовано
+        startTime: Long, // 1-12 (временной слот)
+        status: Int      // 0 - черновик, 1 - опубликовано
     ) {
         viewModelScope.launch {
-            val newNote = Note(
-                id = 0L, // Будет установлен Room при вставке
-                title = title.ifEmpty { null },
+            repository.saveNote(
+                title = title.ifEmpty { "Без названия" },
                 content = content,
                 startTime = startTime,
-                status = status,
-                createdAt = System.currentTimeMillis()
+                status = status
             )
-            
-            // Здесь будет вызов DAO для вставки в базу данных
-            // val noteId = noteDao.insert(newNote)
-            // _notes.value = _notes.value + newNote
-            
-            println("Создана новая заметка: $newNote")
         }
     }
     
     /**
-     * Обновить существующую заметку с новым временем или контентом
+     * Обновление существующей заметки с временным слотом и статусом
      */
     fun updateNote(
         noteId: Long,
-        title: String?,
+        title: String,
         content: String,
-        startTime: Long? = null, // Если null - время не меняется
-        status: Int? = null // Если null - статус не меняется
+        startTime: Long, // 1-12 (временной слот)
+        status: Int      // 0 - черновик, 1 - опубликовано
     ) {
         viewModelScope.launch {
-            val existingNote = _notes.value.find { it.id == noteId } ?: return@launch
-            
-            val updatedNote = Note(
-                id = noteId,
-                title = title.ifEmpty { existingNote.title },
+            repository.updateNote(
+                noteId = noteId,
+                title = title.ifEmpty { "Без названия" },
                 content = content,
-                startTime = startTime ?: existingNote.startTime,
-                status = status ?: existingNote.status,
-                createdAt = existingNote.createdAt
+                startTime = startTime,
+                status = status
             )
-            
-            // Здесь будет вызов DAO для обновления в базе данных
-            // noteDao.update(updatedNote)
-            
-            println("Обновлена заметка: $updatedNote")
         }
     }
     
     /**
-     * Удалить заметку по ID
+     * Удаление заметки с временным слотом и статусом
      */
     fun deleteNote(noteId: Long) {
         viewModelScope.launch {
-            val existingNote = _notes.value.find { it.id == noteId } ?: return@launch
-            
-            // Здесь будет вызов DAO для удаления из базы данных
-            // noteDao.delete(existingNote)
-            
-            println("Удалена заметка с ID: $noteId")
+            repository.deleteNote(noteId)
         }
     }
     
     /**
-     * Получить все заметки (для отображения в списке)
+     * Получение конкретной заметки по ID (с временными слотами и статусами)
      */
-    fun getAllNotes() {
+    fun getNoteById(noteId: Long): Flow<NoteEntity?> = repository.getNoteById(noteId)
+}
+
+/**
+ * ViewModel для управления редактором заметки с выбором времени и статуса
+ */
+class NoteEditorViewModel(
+    private val repository: NoteRepository = NoteRepository()
+) : ViewModel() {
+    
+    // Существующая заметка (если редактируем существующую) или null (новая заметка)
+    var existingNote: NoteEntity? by mutableStateOf(null)
+        private set
+    
+    /**
+     * Инициализация редактора с существующей заметкой или создание новой
+     */
+    fun initializeEditor(noteId: Long?) {
+        if (noteId != null) {
+            viewModelScope.launch {
+                existingNote = repository.getNoteById(noteId).firstOrNull()
+            }
+        } else {
+            // Новая заметка с начальными значениями
+            existingNote = NoteEntity(0L, "Без названия", "", 1, 0) // startTime=1 (17:00-17:15), status=0 (черновик)
+        }
+    }
+    
+    /**
+     * Сохранение заметки с временным слотом и статусом
+     */
+    fun saveNote(
+        title: String,
+        content: String,
+        startTime: Long, // 1-12 (временной слот)
+        status: Int      // 0 - черновик, 1 - опубликовано
+    ) {
         viewModelScope.launch {
-            // Здесь будет вызов DAO для получения всех заметок
-            // val allNotes = noteDao.getAll()
-            // _notes.value = allNotes.sortedByDescending { it.createdAt }
-            
-            println("Получены все заметки")
+            if (existingNote?.id != null && existingNote?.id > 0) {
+                // Обновление существующей заметки
+                repository.updateNote(
+                    noteId = existingNote.id,
+                    title = title.ifEmpty { "Без названия" },
+                    content = content,
+                    startTime = startTime,
+                    status = status
+                )
+            } else {
+                // Создание новой заметки
+                repository.saveNote(
+                    title = title.ifEmpty { "Без названия" },
+                    content = content,
+                    startTime = startTime,
+                    status = status
+                )
+            }
         }
     }
     
     /**
-     * Получить конкретную заметку по ID (для просмотра)
+     * Обновление временного слота в редакторе
      */
-    fun getNoteById(noteId: Long): Note? {
-        return _notes.value.find { it.id == noteId }
+    fun updateStartTime(startTime: Long) {
+        existingNote = existingNote?.copy(startTime = startTime) ?: NoteEntity(0L, "Без названия", "", 1, 0)
+    }
+    
+    /**
+     * Обновление статуса в редакторе
+     */
+    fun updateStatus(status: Int) {
+        existingNote = existingNote?.copy(status = status) ?: NoteEntity(0L, "Без названия", "", 1, 0)
     }
 }
 
 /**
- * Расширение для работы с временными слотами
+ * ViewModel для просмотра конкретной заметки с временным слотом и статусом
  */
-fun Int.toTimeSlotText(): String = when (this) {
-    1 -> "17:00 - 17:15"
-    2 -> "17:15 - 17:30"
-    3 -> "17:30 - 17:45"
-    4 -> "17:45 - 18:00"
-    5 -> "18:00 - 18:15"
-    6 -> "18:15 - 18:30"
-    7 -> "18:30 - 18:45"
-    8 -> "18:45 - 19:00"
-    9 -> "19:00 - 19:15"
-    10 -> "19:15 - 19:30"
-    11 -> "19:30 - 19:45"
-    12 -> "19:45 - 20:00"
-    else -> "Не выбрано время"
-}
-
-/**
- * Расширение для работы со статусом заметки
- */
-fun Int.toStatusText(): String = when (this) {
-    0 -> "Черновик"
-    1 -> "Опубликовано"
-    else -> "Архив"
+class NoteViewViewModel(
+    private val repository: NoteRepository = NoteRepository()
+) : ViewModel() {
+    
+    // Конкретная заметка для просмотра (с временными слотами и статусами)
+    var currentNote: NoteEntity? by mutableStateOf(null)
+        private set
+    
+    /**
+     * Загрузка конкретной заметки по ID (с временными слотами и статусами)
+     */
+    fun loadNote(noteId: Long) {
+        viewModelScope.launch {
+            currentNote = repository.getNoteById(noteId).firstOrNull()
+        }
+    }
+    
+    /**
+     * Обновление заметки в редакторе (возврат к редактированию)
+     */
+    fun updateExistingNote(note: NoteEntity?) {
+        currentNote = note
+    }
 }
