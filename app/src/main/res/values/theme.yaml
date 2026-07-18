@@ -1,0 +1,34 @@
+# Material Design 3 Theme Configuration
+# Для настройки темы приложения
+
+primary: "@color/primary"
+onPrimary: "@color/on_surface"
+primaryContainer: "@color/surface"
+onPrimaryContainer: "@color/text_primary"
+
+secondary: "@color/secondary"
+onSecondary: "@color/on_surface"
+secondaryContainer: "@color/surface"
+onSecondaryContainer: "@color/text_primary"
+
+tertiary: "@color/accent"
+onTertiary: "@color/on_surface"
+tertiaryContainer: "@color/surface"
+onTertiaryContainer: "@color/text_primary"
+
+background: "@color/background"
+onBackground: "@color/on_background"
+surface: "@color/surface"
+onSurface: "@color/on_surface"
+surfaceVariant: "@color/surface"
+onSurfaceVariant: "@color/text_secondary"
+
+error: "@color/primary_variant"
+onError: "#FFFFFF"
+errorContainer: "#B3261E"
+onErrorContainer: "#FFDAD6"
+
+outline: "@color/border_light"
+outlineVariant: "@color/divider"
+
+shadow: "@color/shadow"
