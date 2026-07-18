@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Notepad App</string>
+    
+    <!-- Main Screen -->
+    <string name="main_title">Мои заметки</string>
+    <string name="add_button">Добавить заметку</string>
+    <string name="notes_empty">Заметок пока нет</string>
+    <string name="tap_to_add">Нажмите, чтобы добавить первую заметку</string>
+    
+    <!-- Note Details -->
+    <string name="note_title">Заметка</string>
+    <string name="time_slot">Временной слот</string>
+    <string name="content_hint">Введите текст заметки...</string>
+    <string name="save_button">Сохранить</string>
+    <string name="delete_button">Удалить</string>
+    <string name="draft_status">Черновик</string>
+    <string name="published_status">Опубликовано</string>
+    <string name="archived_status">Архив</string>
+    
+    <!-- Time Slots -->
+    <string name="slot_1700_1715">17:00 - 17:15</string>
+    <string name="slot_1715_1730">17:15 - 17:30</string>
+    <string name="slot_1730_1745">17:30 - 17:45</string>
+    <string name="slot_1745_1800">17:45 - 18:00</string>
+    <string name="slot_1800_1815">18:00 - 18:15</string>
+    <string name="slot_1815_1830">18:15 - 18:30</string>
+    <string name="slot_1830_1845">18:30 - 18:45</string>
+    <string name="slot_1845_1900">18:45 - 19:00</string>
+    <string name="slot_1900_1915">19:00 - 19:15</string>
+    <string name="slot_1915_1930">19:15 - 19:30</string>
+    <string name="slot_1930_1945">19:30 - 19:45</string>
+    <string name="slot_1945_2000">19:45 - 20:00</string>
+    
+    <!-- Actions -->
+    <string name="edit_button">Редактировать</string>
+    <string name="share_button">Поделиться</string>
+    <string name="archive_button">В архив</string>
+    <string name="publish_button">Опубликовать</string>
+    
+    <!-- Notifications -->
+    <string name="save_success">Заметка сохранена!</string>
+    <string name="delete_confirm">Удалить эту заметку?</string>
+    <string name="delete_success">Заметка удалена</string>
+    
+    <!-- Search -->
+    <string name="search_hint">Поиск по заметкам...</string>
+    <string name="no_results">Ничего не найдено</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="clear_all_data">Очистить все данные</string>
+    <string name="about_app">О приложении</string>
+</resources>
