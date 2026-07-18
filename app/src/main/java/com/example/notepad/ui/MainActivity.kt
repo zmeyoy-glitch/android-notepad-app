@@ -10,31 +10,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.notepad.data.NoteEntity
-import com.example.notepad.data.NoteRepository
-import com.example.notepad.data.NoteViewViewModel
 
 /**
- * MainActivity с поддержкой просмотра конкретной заметки (с временным слотом и статусом)
+ * Базовый каркас MainActivity для просмотра заметки
  */
 class MainActivity : ComponentActivity() {
     
-    private val repository = NoteRepository()
-    private lateinit var viewModel: NoteViewViewModel
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Инициализация ViewModel с репозиторием
-        viewModel = viewModel(
-            factory = androidx.lifecycle.viewmodel.compose.viewModelFactory {
-                androidx.lifecycle.viewmodel.compose.ViewModelProvider.Factory.from(NoteViewViewModel::class.java) {
-                    NoteViewViewModel(repository)
-                }
-            },
-            key = "viewNote"
-        )
         
         setContent {
             MaterialTheme {
@@ -58,7 +42,7 @@ class MainActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         // Отображение текущей заметки (с временным слотом и статусом)
-                        val currentNote by viewModel.currentNote.collectAsState()
+                        val currentNote by remember { mutableStateOf<NoteEntity?>(null) }
                         
                         if (currentNote != null) {
                             NotePreviewCard(note = currentNote!!)
@@ -68,7 +52,8 @@ class MainActivity : ComponentActivity() {
                             // Кнопка для обновления заметки из базы данных
                             Button(
                                 onClick = {
-                                    viewModel.loadNote(currentNote!!.id)
+                                    // Загрузка заметки из БД (будет реализована позже)
+                                    loadNoteFromDatabase()
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -86,13 +71,8 @@ class MainActivity : ComponentActivity() {
                             // Кнопка для загрузки первой заметки из базы данных
                             Button(
                                 onClick = {
-                                    repository.getAllNotes().collect { notes ->
-                                        if (notes.isNotEmpty()) {
-                                            viewModel.loadNote(notes.first().id)
-                                        } else {
-                                            viewModel.currentNote.value = NoteEntity(0L, "Нет заметок", "", 1, 0)
-                                        }
-                                    }
+                                    // Загрузка первой заметки (будет реализована позже)
+                                    loadFirstNoteFromDatabase()
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -103,6 +83,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    /**
+     * Загрузка конкретной заметки по ID из базы данных (будет реализована позже)
+     */
+    private fun loadNoteFromDatabase() {
+        // Реализация будет добавлена в NoteRepository
+        currentNote = null
+    }
+    
+    /**
+     * Загрузка первой заметки из базы данных (будет реализована позже)
+     */
+    private fun loadFirstNoteFromDatabase() {
+        // Реализация будет добавлена в NoteRepository
+        currentNote = null
     }
 }
 
