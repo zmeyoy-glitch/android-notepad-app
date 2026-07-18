@@ -15,235 +15,316 @@ import com.example.notepad.data.NoteEntity
  */
 @Composable
 fun NoteEditorScreen(
-    note: NoteEntity?, // Существующая заметка для редактирования или null для новой
+    note: NoteEntity?,
     onBackClick: () -> Unit,
-    onSaveClick: (title: String?, content: String, startTime: Long, status: Int) -> Unit
+    onSaveClick: (NoteEntity) -> Unit,
+    onUpdateStartTime: (Long) -> Unit,
+    onUpdateStatus: (Int) -> Unit
 ) {
-    var title by remember { mutableStateOf(note?.title ?: "") }
-    var content by remember { mutableStateOf(note?.content ?: "") }
-    var startTime by remember { mutableStateOf(note?.startTime ?: 1L) } // По умолчанию 17:00-17:15
-    var status by remember { mutableStateOf(note?.status ?: 0) } // По умолчанию черновик
+    // Текущее состояние заметки в редакторе
+    var editorNote by remember { mutableStateOf(note ?: NoteEntity(0L, "Без названия", "", 1, 0)) }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Редактирование заметки") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black
+    // Выбор временного слота (1-12, соответствует 17:00-20:00 с шагом 15 минут)
+    var selectedTimeSlot by remember { mutableStateOf(editorNote.startTime) }
+    
+    // Выбор статуса заметки (0 - черновик, 1 - опубликовано)
+    var selectedStatus by remember { mutableStateOf(editorNote.status) }
+    
+    // Заголовок заметки
+    var titleText by remember { mutableStateOf(editorNote.title.ifEmpty { "Без названия" }) }
+    
+    // Контент заметки
+    var contentText by remember { mutableStateOf(editorNote.content) }
+    
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Верхняя панель с кнопкой назад и заголовком
+        TopAppBar(
+            title = { 
+                Text(
+                    text = if (note?.id != null && note?.id > 0) "Редактирование заметки" else "Новая заметка",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.White,
+                titleContentColor = Color.Black
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Поле заголовка заметки
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Заголовок", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Введите заголовок") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Black,
-                            unfocusedBorderColor = Color.Gray
-                        )
-                    )
-                }
+            // Кнопка назад
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
             }
             
-            // Поле контента заметки
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Контент", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    OutlinedTextField(
-                        value = content,
-                        onValueChange = { content = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Введите контент заметки") },
-                        minLines = 5,
-                        maxLines = 20,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Black,
-                            unfocusedBorderColor = Color.Gray
-                        )
-                    )
-                }
-            }
-            
-            // Выбор временного слота (17:00-20:00 с шагом 15 минут)
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Временной слот", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // Список временных слотов с выбором
-                    val timeSlots = listOf(
-                        1 to "17:00 - 17:15",
-                        2 to "17:15 - 17:30",
-                        3 to "17:30 - 17:45",
-                        4 to "17:45 - 18:00",
-                        5 to "18:00 - 18:15",
-                        6 to "18:15 - 18:30",
-                        7 to "18:30 - 18:45",
-                        8 to "18:45 - 19:00",
-                        9 to "19:00 - 19:15",
-                        10 to "19:15 - 19:30",
-                        11 to "19:30 - 19:45",
-                        12 to "19:45 - 20:00"
-                    )
-                    
-                    timeSlots.forEachIndexed { index, (value, text) ->
-                        RadioButton(
-                            selected = startTime == value.toLong(),
-                            onClick = { startTime = value.toLong() },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black,
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
-                }
-            }
-            
-            // Выбор статуса заметки
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Статус", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // Список статусов с выбором
-                    val statuses = listOf(
-                        0 to "Черновик" to Color.Gray,
-                        1 to "Опубликовано" to Color.Green
-                    )
-                    
-                    statuses.forEachIndexed { index, (value, text, color) ->
-                        RadioButton(
-                            selected = status == value.toLong(),
-                            onClick = { status = value.toLong() },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = color,
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
-                }
-            }
-            
-            // Кнопка сохранения
-            Button(
-                onClick = { 
-                    onSaveClick(title.ifEmpty { "Без названия" }, content, startTime, status)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
-            ) {
-                Text("Сохранить")
-            }
-        }
-    }
-}
-
-/**
- * Компонент выбора временного слота с отображением выбранного времени
- */
-@Composable
-fun TimeSlotSelector(
-    selectedTime: Long,
-    onTimeSelected: (Long) -> Unit
-) {
-    val timeSlots = listOf(
-        1 to "17:00 - 17:15",
-        2 to "17:15 - 17:30",
-        3 to "17:30 - 17:45",
-        4 to "17:45 - 18:00",
-        5 to "18:00 - 18:15",
-        6 to "18:15 - 18:30",
-        7 to "18:30 - 18:45",
-        8 to "18:45 - 19:00",
-        9 to "19:00 - 19:15",
-        10 to "19:15 - 19:30",
-        11 to "19:30 - 19:45",
-        12 to "19:45 - 20:00"
-    )
-    
-    Column {
-        Text("Выберите временной слот:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        timeSlots.forEachIndexed { index, (value, text) ->
-            RadioButton(
-                selected = selectedTime == value.toLong(),
-                onClick = { onTimeSelected(value.toLong()) },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Spacer(modifier = Modifier.width(8.dp))
             
             Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Black,
-                modifier = Modifier.padding(start = 16.dp)
+                text = if (note?.id != null && note?.id > 0) "Редактирование заметки" else "Новая заметка",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Выбор временного слота
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "⏰ Временной слот",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Blue
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Выбор временного слота (1-12)
+                Row {
+                    TimeSlotPicker(
+                        selectedTimeSlot = selectedTimeSlot,
+                        onTimeSlotSelected = { newSlot ->
+                            selectedTimeSlot = newSlot
+                            onUpdateStartTime(newSlot)
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Отображение выбранного времени в читаемом формате
+                    Text(
+                        text = "${NoteHelpers.getTimeSlotText(selectedTimeSlot)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Blue
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Выбор статуса заметки
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "📌 Статус заметки",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = NoteHelpers.getStatusColor(selectedStatus)
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Выбор статуса (черновик/опубликовано)
+                Row {
+                    StatusPicker(
+                        selectedStatus = selectedStatus,
+                        onStatusSelected = { newStatus ->
+                            selectedStatus = newStatus
+                            onUpdateStatus(newStatus)
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Отображение выбранного статуса в читаемом формате
+                    Text(
+                        text = "${NoteHelpers.getStatusText(selectedStatus)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = NoteHelpers.getStatusColor(selectedStatus)
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Поле заголовка заметки
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "📝 Заголовок",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = titleText,
+                    onValueChange = { 
+                        titleText = it 
+                        editorNote = editorNote.copy(title = it) 
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Введите заголовок заметки...") },
+                    maxLines = 2,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Blue,
+                        unfocusedBorderColor = Color.LightGray
+                    )
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Поле контента заметки
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "📄 Контент",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = contentText,
+                    onValueChange = { 
+                        contentText = it 
+                        editorNote = editorNote.copy(content = it) 
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Введите контент заметки...") },
+                    maxLines = 10,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Blue,
+                        unfocusedBorderColor = Color.LightGray
+                    )
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Кнопка сохранения заметки
+        Button(
+            onClick = { 
+                onSaveClick(editorNote) 
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)),
+            enabled = titleText.isNotEmpty() || contentText.isNotEmpty()
+        ) {
+            Text("Сохранить заметку")
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+/**
+ * Компонент выбора временного слота (1-12, соответствует 17:00-20:00 с шагом 15 минут)
+ */
+@Composable
+fun TimeSlotPicker(
+    selectedTimeSlot: Long,
+    onTimeSlotSelected: (Long) -> Unit
+) {
+    // Генерация кнопок для выбора временных слотов (1-12)
+    val timeSlots = listOf(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L)
+    
+    Row {
+        timeSlots.forEachIndexed { index, slot ->
+            val isSelected = selectedTimeSlot == slot
+            
+            // Отображение номера слота и времени в читаемом формате
+            TextButton(
+                onClick = { 
+                    onTimeSlotSelected(slot) 
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = if (isSelected) Color.Blue else Color.Black,
+                    disabledContentColor = Color.Gray
+                )
+            ) {
+                Text(
+                    text = "${slot} (${NoteHelpers.getTimeSlotText(slot)})"
+                )
+            }
         }
     }
 }
 
 /**
- * Компонент выбора статуса заметки с отображением выбранного статуса
+ * Компонент выбора статуса заметки (черновик/опубликовано)
  */
 @Composable
-fun StatusSelector(
+fun StatusPicker(
     selectedStatus: Int,
     onStatusSelected: (Int) -> Unit
 ) {
-    val statuses = listOf(
-        0 to "Черновик" to Color.Gray,
-        1 to "Опубликовано" to Color.Green
-    )
+    // Генерация кнопок для выбора статусов (0 - черновик, 1 - опубликовано)
+    val statuses = listOf(0 to "Черновик", 1 to "Опубликовано")
     
-    Column {
-        Text("Выберите статус:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        statuses.forEachIndexed { index, (value, text, color) ->
-            RadioButton(
-                selected = selectedStatus == value.toLong(),
-                onClick = { onStatusSelected(value.toLong()) },
-                modifier = Modifier.fillMaxWidth()
-            )
+    Row {
+        statuses.forEachIndexed { index, (statusValue, statusText) ->
+            val isSelected = selectedStatus == statusValue
             
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = color,
-                modifier = Modifier.padding(start = 16.dp)
-            )
+            // Отображение статуса в читаемом формате с цветом
+            TextButton(
+                onClick = { 
+                    onStatusSelected(statusValue) 
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = if (isSelected) NoteHelpers.getStatusColor(statusValue) else Color.Black,
+                    disabledContentColor = Color.Gray
+                )
+            ) {
+                Text(textText)
+            }
         }
     }
+}
+
+/**
+ * Компонент отображения выбранного временного слота в читаемом формате
+ */
+@Composable
+fun SelectedTimeSlotDisplay(selectedTimeSlot: Long) {
+    val timeText = NoteHelpers.getTimeSlotText(selectedTimeSlot)
+    
+    Text(
+        text = "⏰ $timeText",
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Medium,
+        color = Color.Blue
+    )
+}
+
+/**
+ * Компонент отображения выбранного статуса в читаемом формате
+ */
+@Composable
+fun SelectedStatusDisplay(selectedStatus: Int) {
+    val statusText = NoteHelpers.getStatusText(selectedStatus)
+    val statusColor = NoteHelpers.getStatusColor(selectedStatus)
+    
+    Text(
+        text = "📌 $statusText",
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Medium,
+        color = statusColor
+    )
 }
