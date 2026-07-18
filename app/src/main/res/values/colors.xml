@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary">#6200EE</color>
+    <color name="primary_variant">#3700B3</color>
+    
+    <!-- Secondary Colors -->
+    <color name="secondary">#03DAC5</color>
+    <color name="secondary_variant">#018786</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_background">#1C1C1C</color>
+    <color name="on_surface">#000000</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent">#FF6200EE</color>
+    <color name="accent_light">#FFE0B2</color>
+    
+    <!-- Status Colors -->
+    <color name="draft_background">#E3F2FD</color>
+    <color name="published_background">#E8F5E9</color>
+    <color name="archived_background">#FFF3E0</color>
+    
+    <!-- Time Slot Colors (12 slots with different colors) -->
+    <color name="slot_1">#FFEBEE</color>
+    <color name="slot_2">#FCE4EC</color>
+    <color name="slot_3">#FFF8E1</color>
+    <color name="slot_4">#F1F8E9</color>
+    <color name="slot_5">#E0F2F1</color>
+    <color name="slot_6">#E3F2FD</color>
+    <color name="slot_7">#F3E5F5</color>
+    <color name="slot_8">#FFFDE7</color>
+    <color name="slot_9">#FFE0B2</color>
+    <color name="slot_10">#FFCCBC</color>
+    <color name="slot_11">#E1F5FE</color>
+    <color name="slot_12">#FFF8E1</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+    
+    <!-- Border & Divider -->
+    <color name="divider">#BDBDBD</color>
+    <color name="border_light">#E0E0E0</color>
+    
+    <!-- Shadows -->
+    <color name="shadow">#1C1C1C26</color>
+</resources>
