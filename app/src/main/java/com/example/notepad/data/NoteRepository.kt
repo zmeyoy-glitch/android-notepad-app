@@ -1,27 +1,27 @@
 package com.example.notepad.data
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository для работы с базой данных заметок (с временными слотами и статусами)
+ * Репозиторий для работы с базой данных заметок (с временными слотами и статусами)
  */
 class NoteRepository {
     
-    // Инъекция Room Database
-    private val database: AppDatabase
-    
-    init {
-        this.database = AppDatabase.getInstance()
-    }
+    private val database = AppDatabase.getInstance(this@androidNotepadAppApplication.applicationContext)
     
     /**
      * Получение всех заметок из базы данных (с временными слотами и статусами)
      */
-    fun getAllNotes(): Flow<List<NoteEntity>> {
+    fun getAllNotes(): LiveData<List<NoteEntity>> {
         return database.noteDao().getAllNotes()
+    }
+    
+    /**
+     * Получение конкретной заметки по ID из базы данных (с временными слотами и статусами)
+     */
+    fun getNoteById(noteId: Long): LiveData<NoteEntity?> {
+        return database.noteDao().getNoteById(noteId)
     }
     
     /**
@@ -30,10 +30,18 @@ class NoteRepository {
     suspend fun saveNote(
         title: String,
         content: String,
-        startTime: Long, // 1-12 (временной слот)
-        status: Int      // 0 - черновик, 1 - опубликовано
-    ) {
-        database.noteDao().insertOrUpdate(NoteEntity(0L, title, content, startTime, status))
+        startTime: Long = 1L, // По умолчанию 17:00
+        status: Int = 0       // По умолчанию черновик
+    ): Long {
+        val note = NoteEntity(
+            id = 0L,
+            title = title.ifEmpty { "Новая заметка" },
+            content = content.ifEmpty { "" },
+            startTime = startTime,
+            status = status
+        )
+        
+        return database.noteDao().insert(note)
     }
     
     /**
@@ -43,48 +51,63 @@ class NoteRepository {
         noteId: Long,
         title: String,
         content: String,
-        startTime: Long, // 1-12 (временной слот)
-        status: Int      // 0 - черновик, 1 - опубликовано
-    ) {
-        database.noteDao().insertOrUpdate(NoteEntity(noteId, title, content, startTime, status))
+        startTime: Long = 1L, // По умолчанию 17:00
+        status: Int = 0       // По умолчанию черновик
+    ): Unit {
+        val note = NoteEntity(
+            id = noteId,
+            title = title.ifEmpty { "Обновленная заметка" },
+            content = content.ifEmpty { "" },
+            startTime = startTime,
+            status = status
+        )
+        
+        database.noteDao().update(note)
     }
     
     /**
      * Удаление заметки из базы данных (с временным слотом и статусом)
      */
-    suspend fun deleteNote(note: NoteEntity) {
+    suspend fun deleteNote(note: NoteEntity): Unit {
         database.noteDao().delete(note)
     }
-    
-    /**
-     * Получение конкретной заметки по ID из базы данных (с временными слотами и статусами)
-     */
-    fun getNoteById(noteId: Long): Flow<NoteEntity?> {
-        return database.noteDao().getNoteById(noteId)
-    }
 }
 
 /**
- * Расширение для удобного сохранения заметки в базе данных (с временным слотом и статусом)
+ * Расширение для удобного получения всех заметок из базы данных (с временными слотами и статусами)
  */
-fun NoteRepository.saveNote(
+fun NoteRepository.getAllNotes(): LiveData<List<NoteEntity>> {
+    return this.getAllNotes()
+}
+
+/**
+ * Расширение для удобного получения конкретной заметки по ID из базы данных (с временными слотами и статусами)
+ */
+fun NoteRepository.getNoteById(noteId: Long): LiveData<NoteEntity?> {
+    return this.getNoteById(noteId)
+}
+
+/**
+ * Расширение для удобного сохранения новой или существующей заметки в базе данных (с временным слотом и статусом)
+ */
+suspend fun NoteRepository.saveNote(
     title: String,
     content: String,
-    startTime: Long, // 1-12 (временной слот)
-    status: Int      // 0 - черновик, 1 - опубликовано
-): Unit {
-    this.saveNote(title, content, startTime, status)
+    startTime: Long = 1L, // По умолчанию 17:00
+    status: Int = 0       // По умолчанию черновик
+): Long {
+    return this.saveNote(title, content, startTime, status)
 }
 
 /**
- * Расширение для удобного обновления заметки в базе данных (с временным слотом и статусом)
+ * Расширение для удобного обновления существующей заметки в базе данных (с временным слотом и статусом)
  */
-fun NoteRepository.updateNote(
+suspend fun NoteRepository.updateNote(
     noteId: Long,
     title: String,
     content: String,
-    startTime: Long, // 1-12 (временной слот)
-    status: Int      // 0 - черновик, 1 - опубликовано
+    startTime: Long = 1L, // По умолчанию 17:00
+    status: Int = 0       // По умолчанию черновик
 ): Unit {
     this.updateNote(noteId, title, content, startTime, status)
 }
@@ -92,7 +115,7 @@ fun NoteRepository.updateNote(
 /**
  * Расширение для удобного удаления заметки из базы данных (с временным слотом и статусом)
  */
-fun NoteRepository.deleteNote(
+suspend fun NoteRepository.deleteNote(
     note: NoteEntity
 ): Unit {
     this.deleteNote(note)
